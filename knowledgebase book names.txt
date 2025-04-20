@@ -1,0 +1,9 @@
+1.Data Science and Machine Learning by Dirk P. Kroese, Zdravko I. Botev, Thomas Taimre, Radislav Vaisman
+2.Data Science & Big Data Analytics by Wiley
+3.The Elements of Statistical Learning by Trevor Hastie
+4.Pattern Recognition and Machine Learning by Christopher M. Bishop
+5.Machine Learning Yearning by Andrew NG
+6.Machine Learning A Probabilistic Perspective Kevin P. Murphy
+7.Deep Learning Ian Goodfellow
+8.Statistical Learning with Sparsity The Lasso and Generalizations
+9.Bayesian Reasoning and Machine Learning David Barber

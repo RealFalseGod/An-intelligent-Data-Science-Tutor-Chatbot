@@ -1,22 +1,66 @@
+#This can be used on collab due to local system limitations
+#!pip install -q faiss-cpu sentence-transformers PyPDF2
+
 from sentence_transformers import SentenceTransformer
 from functions_for_data import *
-# Load the pre-trained model for sentence embeddings
-model = SentenceTransformer('all-MiniLM-L6-v2')
+import os
+import faiss
+import torch
 
-# Example of extracting text and creating chunks and embeddings
-pdf_path = "data_science_notes.pdf"
-text = extract_text_from_pdf(pdf_path)
 
-chunks = create_chunks(text)
-embeddings = create_embeddings(chunks,model)
+device = 'cuda' if torch.cuda.is_available() else 'cpu' 
 
-# Build the FAISS index for efficient similarity search
-index = build_index(embeddings)
+index_file = "faiss_index.index"
+if os.path.exists(index_file):
+    index = faiss.read_index(index_file)
+else:
+    
+    index = faiss.IndexFlatL2(384)  
 
-# Save the index for future use
-faiss.write_index(index, "faiss_index.index")
+  
+    if device == 'cuda':
+        res = faiss.StandardGpuResources()  
+        gpu_index = faiss.index_cpu_to_gpu(res, 0, index)  
+    else:
+        gpu_index = index
 
-# Save the chunks as well, so we can reference them later
-with open("chunks.txt", "w",encoding="utf-8") as f:
-    for chunk in chunks:
-        f.write(f"{chunk}\n\n")
+chunks = []
+if os.path.exists("chunks.txt"):
+    with open("chunks.txt", "r", encoding="utf-8") as f:
+        chunks = f.read().split("\n\n")
+
+def extract_text_from_pdf(pdf_path):
+   
+    model = SentenceTransformer('all-MiniLM-L6-v2', device=device) 
+    
+    
+    text = extract_text_from_pdf(pdf_path)
+    print("Extracted text from PDF") 
+    new_chunks = create_chunks(text)
+    
+    
+    new_embeddings = create_embeddings(new_chunks, model) 
+    
+    
+    if device == 'cuda':
+        new_embeddings = torch.tensor(new_embeddings).cuda()  
+        new_embeddings = new_embeddings.cpu().numpy()  
+    else:
+        new_embeddings = torch.tensor(new_embeddings).numpy()
+
+  
+    gpu_index.add(new_embeddings) 
+
+    global chunks
+    chunks.extend(new_chunks)
+    
+  
+    with open("chunks.txt", "a", encoding="utf-8") as f:
+        for chunk in new_chunks:
+            f.write(f"{chunk}\n\n")
+    
+    if device == 'cuda':
+        faiss.write_index(gpu_index, "faiss_index.index") 
+    else:
+        faiss.write_index(gpu_index, "faiss_index.index")  
+    print("Data uploaded to index")
